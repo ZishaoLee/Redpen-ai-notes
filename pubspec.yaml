@@ -1,0 +1,61 @@
+name: redpen
+description: "RedPen - 考研数学错题狙击手"
+publish_to: 'none'
+version: 1.1.0+2
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # 状态管理
+  provider: ^6.1.2
+
+  # 图片选择（拍照/相册）
+  image_picker: ^1.1.2
+
+  # 网络请求（调用 OpenAI / Gemini API）
+  http: ^1.2.2
+
+  # 本地存储（API Key / 提示词等配置）
+  shared_preferences: ^2.3.4
+
+  # 字体美化
+  google_fonts: ^6.2.1
+
+  # 文件操作
+  path_provider: ^2.1.5
+  uuid: ^4.5.3
+  flutter_image_compress: ^2.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+  windows:
+    generate: true
+    image_path: "assets/logo.png"
+  macos:
+    generate: true
+    image_path: "assets/logo.png"
+
+flutter:
+  uses-material-design: true
+
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.17
+  image_picker_android: 0.8.9+3

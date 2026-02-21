@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter:*)",
+      "Bash(tasklist:*)",
+      "Bash(taskkill:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(powershell -Command \"\\(New-Object -ComObject WScript.Shell\\).CreateShortcut\\(''C:\\\\Users\\\\Public\\\\Desktop\\\\lasers.lnk''\\).TargetPath\")",
+      "Bash(copy:*)"
+    ]
+  }
+}
