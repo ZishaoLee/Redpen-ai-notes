@@ -1,16 +1,32 @@
-# redpen_agent
+# RedPen
 
-A new Flutter project.
+基于 BYOK（自带密钥）模式的本地化内容提取与笔记生成工具。核心机制为**双轨 AI 处理**（视觉提取与文本调优解耦），主攻复杂排版（如公式推导、结构化文案）的高效录入与二次加工。
 
-## Getting Started
+## 一、 核心架构
 
-This project is a starting point for a Flutter application.
+* **双轨引擎 (算力与场景解耦)**
+  * **视觉提取流**：负责“图转文”。挂载多模态大模型（如 Kimi视觉），结合预设提示词，一次性完成图像识别与初步 Markdown/LaTeX 结构化。
+  * **文本调优流**：负责“文本清洗”。挂载快速响应模型（如 DeepSeek），结合独立提示词，处理格式修复与局部逻辑重构。
 
-A few resources to get you started if this is your first Flutter project:
+* **开放配置 (底层全交权)**
+  * **接口标准化**：支持标准 OpenAI 协议接入任意模型库。
+  * **指令自定义**：预设提示词完全由用户接管，支持存留多套配置并一键切换业务模式（如错题提取、阅读提炼等）。
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+* **数据闭环 (Local-First)**
+  * **物理落盘**：数据直存本地，支持完全自定义保存的文件夹路径与文件名称。
+  * **生态融合**：原生兼容 Obsidian 等双链笔记软件，充当知识库的前哨采集站。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+* **可控编辑 (局部外科手术)**
+  * AI 调优助手采用双栏对比预览与对话式干预。
+  * 提供明确的“退回/确定”机制，精准修复局部缺陷，杜绝全局重写导致的排版崩溃。
+
+## 二、 核心工作流
+
+1. **图文采集**：通过首页极简入口（拍照/相册）输入原始图像素材。
+2. **视觉提取**：系统调用“视觉提取流”，结合绑定的系统提示词，将图像一次性解析为包含 LaTeX 的结构化 Markdown 初稿。
+3. **本地审阅**：在核心编辑器内实时渲染排版。若内容准确无误，直接跳至第 5 步。
+4. **局部调优 (按需)**：
+   * 选中需修改的文本（如某步公式推导），唤起“AI 调优助手”。
+   * 切换至对应场景的提示词（如“格式整理”），或输入自然语言指令（如“补全推导步骤”）。
+   * 对比修改前后的内容，确认无误后替换回主编辑器。
+5. **自定义归档**：在保存阶段，用户自定义目标文件夹与文件名称，确认后物理写入本地存储，无缝同步至知识库。
