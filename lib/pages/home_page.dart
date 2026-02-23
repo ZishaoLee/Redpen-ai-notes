@@ -10,6 +10,7 @@ import '../services/settings_service.dart';
 import '../services/prompt_service.dart';
 import '../widgets/ai_sidebar_panel.dart';
 import '../widgets/math_drawer.dart';
+import '../widgets/folder_selector.dart';
 
 // ── 应用状态枚举 ─────────────────────────────────────────
 enum AppState { idle, staging, analyzing, error }
@@ -223,51 +224,105 @@ class _HomePageState extends State<HomePage> {
         );
       }
     } else {
-      // ── 新文件：仅弹窗输入文件名，路径自动拼接到当前工作区 ──
-      final nameController = TextEditingController(
-        text: '笔记_${DateTime.now().millisecondsSinceEpoch}',
-      );
+      // ── 新文件：弹窗输入文件名，选择存储文件夹 ──
+      final settings = context.read<SettingsService>();
+      final nameController = TextEditingController(); // 默认清空，不预置文件名
+
+      // 获取上次使用的子文件夹
+      String currentSubfolder = settings.lastSaveSubfolder;
+
+      // 验证文件夹是否存在，若不存在则重置为根目录
+      if (currentSubfolder.isNotEmpty) {
+        final dir = Directory('$_workspacePath/$currentSubfolder');
+        if (!dir.existsSync()) {
+          currentSubfolder = '';
+        }
+      }
+
       final fileName = await showDialog<String>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('保存 Markdown'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '保存到: $_workspacePath/',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  hintText: '输入文件名（无需加 .md）',
-                  helperText: '可加路径前缀新建文件夹，如: 微积分/极限测试',
-                  helperMaxLines: 2,
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setState) {
+            final displayPath = currentSubfolder.isEmpty
+                ? '$_workspacePath/'
+                : '$_workspacePath/$currentSubfolder/';
+
+            return AlertDialog(
+              title: const Text('保存 Markdown'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '保存到: $displayPath',
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        hintText: '输入文件名（无需加 .md）',
+                        helperText: '可加路径前缀新建文件夹，如: 微积分/极限测试',
+                        helperMaxLines: 2,
+                      ),
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 12),
+                    FolderSelector(
+                      basePath: _workspacePath,
+                      currentSubfolder: currentSubfolder,
+                      recentFolders: settings.recentFolders,
+                      onFolderSelected: (path) {
+                        setState(() {
+                          currentSubfolder = path;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                autofocus: true,
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, null),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, nameController.text),
-              child: const Text('保存'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // 保存当前的子文件夹设置
+                    settings.setLastSaveSubfolder(currentSubfolder);
+                    // 添加到最近使用的文件夹
+                    if (currentSubfolder.isNotEmpty) {
+                      settings.addRecentFolder(currentSubfolder);
+                    }
+                    Navigator.pop(ctx, nameController.text);
+                  },
+                  child: const Text('保存'),
+                ),
+              ],
+            );
+          },
         ),
       );
 
       if (fileName == null || fileName.trim().isEmpty) return;
 
       try {
-        final fullPath = '$_workspacePath/${fileName.trim()}.md';
+        // 构建完整路径：工作区 + 子文件夹 (如果有) + 文件名
+        String subPath = settings.lastSaveSubfolder;
+        // 再次验证路径是否存在
+        if (subPath.isNotEmpty &&
+            !Directory('$_workspacePath/$subPath').existsSync()) {
+          subPath = '';
+        }
+
+        String fullPath = '$_workspacePath/';
+        if (subPath.isNotEmpty) {
+          fullPath += '$subPath/';
+        }
+        fullPath += '${fileName.trim()}.md';
+
         final file = File(fullPath);
 
         // 确保父目录存在

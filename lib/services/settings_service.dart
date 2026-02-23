@@ -19,6 +19,8 @@ class SettingsService extends ChangeNotifier {
   static const _keyOpenAIBaseUrl = 'openai_base_url';
 
   static const _keyWorkspace = 'current_workspace';
+  static const _keyLastSaveSubfolder = 'last_save_subfolder';
+  static const _keyRecentFolders = 'recent_folders_v1';
 
   // V2 Keys
   static const _keyVisionConfig = 'vision_config_v2';
@@ -33,6 +35,8 @@ class SettingsService extends ChangeNotifier {
   static const documentsBasePath = '/storage/emulated/0/Documents';
 
   String _currentWorkspace = 'Math1';
+  String _lastSaveSubfolder = '';
+  List<String> _recentFolders = [];
 
   // Active Configs (can be custom or copied from repository)
   late AIConfig _visionConfig;
@@ -47,6 +51,8 @@ class SettingsService extends ChangeNotifier {
   late final Future<void> _initFuture;
 
   String get currentWorkspace => _currentWorkspace;
+  String get lastSaveSubfolder => _lastSaveSubfolder;
+  List<String> get recentFolders => List.unmodifiable(_recentFolders);
 
   AIConfig get visionConfig => _visionConfig;
   AIConfig get editConfig => _editConfig;
@@ -73,6 +79,8 @@ class SettingsService extends ChangeNotifier {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _currentWorkspace = prefs.getString(_keyWorkspace) ?? 'Math1';
+    _lastSaveSubfolder = prefs.getString(_keyLastSaveSubfolder) ?? '';
+    _recentFolders = prefs.getStringList(_keyRecentFolders) ?? [];
 
     // 1. Load Repository
     final savedJson = prefs.getStringList(_keySavedModels);
@@ -238,6 +246,29 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setLastSaveSubfolder(String path) async {
+    _lastSaveSubfolder = path.trim();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyLastSaveSubfolder, _lastSaveSubfolder);
+    notifyListeners();
+  }
+
+  Future<void> addRecentFolder(String path) async {
+    final cleanPath = path.trim();
+    if (cleanPath.isEmpty) return;
+
+    _recentFolders.remove(cleanPath);
+    _recentFolders.insert(0, cleanPath);
+
+    if (_recentFolders.length > 10) {
+      _recentFolders = _recentFolders.sublist(0, 10);
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyRecentFolders, _recentFolders);
+    notifyListeners();
+  }
+
   Future<void> setActiveVisionPromptId(String id) async {
     if (_activeVisionPromptId == id) return;
     _activeVisionPromptId = id;
@@ -260,6 +291,8 @@ class SettingsService extends ChangeNotifier {
     _editConfig = AIConfig.defaultConfig().copyWith(provider: 'gemini');
     _activeVisionPromptId = '';
     _activeEditPromptId = '';
+    _lastSaveSubfolder = '';
+    _recentFolders = [];
     _savedModels = [
       AIConfig.defaultConfig(),
       AIConfig.defaultConfig().copyWith(
